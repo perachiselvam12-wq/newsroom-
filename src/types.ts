@@ -14,11 +14,16 @@ export type PointCategory =
 
 export interface User {
   id: string;
+  uid: string;
   name: string;
+  fullName: string;
   email: string;
   role: 'editor' | 'journalist' | 'admin';
   preferredLanguage?: 'en' | 'ta';
+  photoURL?: string;
   theme?: 'light' | 'dark';
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ImportantPoint {
@@ -65,6 +70,7 @@ export interface TranscriptSegment {
 }
 
 export interface AlternativeHeadlines {
+  primary?: string;
   breaking: string;
   newspaper: string;
   formal: string;
@@ -87,25 +93,48 @@ export interface AnalysisResult {
   detectedLanguage?: string;
 }
 
-export interface Analysis {
+export interface Meeting {
   id: string;
   userId: string;
   title: string;
-  sourceType: SourceType;
+  mediaType: SourceType;
+  sourceType?: SourceType;
+  mediaFileName?: string;
   fileName?: string;
   fileSize?: number;
   mediaPath?: string;
+  mediaDuration?: string;
+  status: JobStatus;
+  processingStatus?: JobStatus;
+  uploadStatus?: 'completed' | 'failed';
   sourceLanguage: 'en' | 'ta' | 'auto';
   outputLanguage: 'en' | 'ta';
-  uploadStatus: 'completed' | 'failed';
-  processingStatus: JobStatus;
-  headline: string;
-  analysisResult?: AnalysisResult;
+  originalTranscript?: string;
+  headline?: string;
+  headlines?: {
+    primary: string;
+    breaking?: string;
+    newspaper?: string;
+    formal?: string;
+    digital?: string;
+    social?: string;
+  };
+  shortSummary?: string;
+  detailedSummary?: string;
+  keyPoints?: ImportantPoint[];
+  actionItems?: ActionItem[];
+  keyDecisions?: DecisionItem[];
+  keyFacts?: KeyFact[];
+  sentiment?: string;
+  importance?: ImportanceLevel;
   isSaved: boolean;
+  analysisResult?: AnalysisResult;
   jobId?: string;
   createdAt: string;
   updatedAt: string;
 }
+
+export type Analysis = Meeting;
 
 export interface ProcessingJob {
   id: string;
@@ -125,5 +154,5 @@ export interface DashboardStats {
   totalAnalyses: number;
   videosAnalyzed: number;
   savedReports: number;
-  recent: Analysis[];
+  recent: Meeting[];
 }

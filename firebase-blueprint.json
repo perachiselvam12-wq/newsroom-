@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile document stored under users/{userId}",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "fullName": { "type": "string", "description": "Full name of the user", "maxLength": 150 },
+        "email": { "type": "string", "description": "Email address of the user", "maxLength": 200 },
+        "preferredLanguage": { "type": "string", "enum": ["en", "ta"], "description": "Preferred language (en or ta)" },
+        "photoURL": { "type": "string", "description": "User avatar image URL", "maxLength": 500 },
+        "createdAt": { "type": "string", "description": "ISO timestamp of account creation" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last update" }
+      },
+      "required": ["uid", "fullName", "email"]
+    },
+    "Meeting": {
+      "title": "Meeting",
+      "description": "Newsroom meeting report and AI headline analysis document",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the meeting", "maxLength": 128 },
+        "userId": { "type": "string", "description": "UID of the owner user", "maxLength": 128 },
+        "title": { "type": "string", "description": "Title of the meeting", "maxLength": 300 },
+        "mediaType": { "type": "string", "enum": ["video", "audio", "text"], "description": "Type of media" },
+        "mediaFileName": { "type": "string", "description": "Original file name if uploaded", "maxLength": 255 },
+        "mediaDuration": { "type": "string", "description": "Duration of media", "maxLength": 50 },
+        "status": { "type": "string", "description": "Current processing status", "maxLength": 50 },
+        "sourceLanguage": { "type": "string", "description": "Source language code", "maxLength": 20 },
+        "outputLanguage": { "type": "string", "description": "Target output language code", "maxLength": 20 },
+        "originalTranscript": { "type": "string", "description": "Full text transcription" },
+        "headlines": { "type": "object", "description": "Generated headlines collection" },
+        "shortSummary": { "type": "string", "description": "Executive short summary" },
+        "detailedSummary": { "type": "string", "description": "Detailed journalistic summary" },
+        "keyPoints": { "type": "array", "description": "Categorized key points" },
+        "actionItems": { "type": "array", "description": "Extracted action items" },
+        "keyDecisions": { "type": "array", "description": "Decisions taken" },
+        "keyFacts": { "type": "array", "description": "Key facts, figures, and claims" },
+        "sentiment": { "type": "string", "description": "Tone and sentiment analysis", "maxLength": 50 },
+        "importance": { "type": "string", "description": "Assessed importance level", "maxLength": 50 },
+        "isSaved": { "type": "boolean", "description": "Bookmark flag" },
+        "createdAt": { "type": "string", "description": "ISO timestamp of creation" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last modification" }
+      },
+      "required": ["id", "userId", "title", "mediaType", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Stores user profile and account preferences"
+    },
+    "/meetings/{meetingId}": {
+      "schema": "Meeting",
+      "description": "Stores analyzed meeting reports, AI headlines, summaries, and action items"
+    }
+  }
+}

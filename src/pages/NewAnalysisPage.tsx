@@ -23,6 +23,9 @@ import {
   type UploadProgress,
   type UploadController 
 } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
+import { saveMeetingToFirestore } from '../lib/firestoreService';
+import type { Meeting } from '../types';
 
 interface NewAnalysisPageProps {
   onAnalysisReady: (analysisId: string) => void;
@@ -30,6 +33,7 @@ interface NewAnalysisPageProps {
 }
 
 export const NewAnalysisPage: React.FC<NewAnalysisPageProps> = ({ onAnalysisReady, onCancel }) => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'upload' | 'text'>('upload');
   
   // Form fields
@@ -171,6 +175,56 @@ export const NewAnalysisPage: React.FC<NewAnalysisPageProps> = ({ onAnalysisRead
         if (job.status === 'completed') {
           clearInterval(pollIntervalRef.current);
           setIsProcessing(false);
+
+          // Save meeting record to Firestore under the authenticated user's UID
+          try {
+            const { analysis } = await getAnalysis(aId);
+            if (user?.uid) {
+              const meetingPayload: Meeting = {
+                id: analysis.id,
+                userId: user.uid,
+                title: analysis.title,
+                mediaType: analysis.sourceType || (selectedFile?.type.includes('audio') ? 'audio' : 'video'),
+                sourceType: analysis.sourceType || (selectedFile?.type.includes('audio') ? 'audio' : 'video'),
+                mediaFileName: selectedFile?.name || analysis.fileName || '',
+                mediaDuration: 'Meeting Recording',
+                status: 'completed',
+                processingStatus: 'completed',
+                uploadStatus: 'completed',
+                sourceLanguage,
+                outputLanguage,
+                originalTranscript:
+                  analysis.analysisResult?.transcriptSegments
+                    ?.map((s) => `[${s.timestamp}] ${s.speaker}: ${s.text}`)
+                    .join('\n\n') || textContent || '',
+                headline: analysis.headline || analysis.analysisResult?.primaryHeadline || analysis.title,
+                headlines: {
+                  primary: analysis.headline || analysis.analysisResult?.primaryHeadline || analysis.title,
+                  breaking: analysis.analysisResult?.alternativeHeadlines?.breaking || '',
+                  newspaper: analysis.analysisResult?.alternativeHeadlines?.newspaper || '',
+                  formal: analysis.analysisResult?.alternativeHeadlines?.formal || '',
+                  digital: analysis.analysisResult?.alternativeHeadlines?.digital || '',
+                  social: analysis.analysisResult?.alternativeHeadlines?.social || '',
+                },
+                shortSummary: analysis.analysisResult?.quickSummary || '',
+                detailedSummary: analysis.analysisResult?.detailedSummary || '',
+                keyPoints: analysis.analysisResult?.importantPoints || [],
+                actionItems: analysis.analysisResult?.actionItems || [],
+                keyDecisions: analysis.analysisResult?.decisions || [],
+                keyFacts: analysis.analysisResult?.keyFacts || [],
+                sentiment: 'Objective & Constructive',
+                importance: 'High',
+                isSaved: false,
+                analysisResult: analysis.analysisResult,
+                createdAt: analysis.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              };
+              await saveMeetingToFirestore(meetingPayload);
+            }
+          } catch (syncErr) {
+            console.warn('[NewAnalysis] Firestore synchronization warning:', syncErr);
+          }
+
           onAnalysisReady(aId);
         } else if (job.status === 'failed') {
           clearInterval(pollIntervalRef.current);

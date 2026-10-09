@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getAnalysisStats, deleteAnalysis, updateAnalysis, retryAnalysis } from '../lib/api';
-import type { DashboardStats, Analysis } from '../types';
+import { 
+  subscribeUserMeetings, 
+  updateMeetingInFirestore, 
+  deleteMeetingFromFirestore, 
+  seedDemoMeetingForUser 
+} from '../lib/firestoreService';
+import { updateAnalysis, retryAnalysis } from '../lib/api';
+import type { DashboardStats, Meeting } from '../types';
 import { 
   Plus, 
   Video, 
@@ -10,14 +16,15 @@ import {
   Clock, 
   ArrowRight, 
   Search, 
-  ExternalLink, 
   Trash2, 
   CheckCircle2, 
   AlertCircle,
   Copy,
   Check,
   Languages,
-  RotateCcw
+  RotateCcw,
+  Sparkles,
+  Database
 } from 'lucide-react';
 
 interface DashboardPageProps {
@@ -34,81 +41,125 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onViewSaved
 }) => {
   const { user } = useAuth();
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  const fetchStats = async () => {
-    try {
-      setIsLoading(true);
-      const data = await getAnalysisStats();
-      setStats(data);
-    } catch (err) {
-      console.error('[Dashboard] Error fetching stats:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchStats();
-  }, []);
+    if (!user?.uid) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    // Real-time Firestore query scoped to current authenticated user: where('userId', '==', user.uid)
+    const unsubscribe = subscribeUserMeetings(user.uid, (data) => {
+      setMeetings(data);
+      const totalAnalyses = data.length;
+      const videosAnalyzed = data.filter(m => (m.mediaType || m.sourceType) === 'video').length;
+      const savedReports = data.filter(m => m.isSaved).length;
+      setStats({
+        totalAnalyses,
+        videosAnalyzed,
+        savedReports,
+        recent: data.slice(0, 8),
+      });
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid]);
+
+  const showNotification = (msg: string) => {
+    setActionFeedback(msg);
+    setTimeout(() => setActionFeedback(null), 3000);
+  };
 
   const handleCopyHeadline = (headline: string, id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     navigator.clipboard.writeText(headline);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+    showNotification('Headline copied to clipboard');
   };
 
-  const handleToggleSave = async (analysis: Analysis, e: React.MouseEvent) => {
+  const handleToggleSave = async (meeting: Meeting, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await updateAnalysis(analysis.id, { isSaved: !analysis.isSaved });
-      fetchStats();
-    } catch (err) {
+      const nextSaved = !meeting.isSaved;
+      await updateMeetingInFirestore(meeting.id, { isSaved: nextSaved });
+      updateAnalysis(meeting.id, { isSaved: nextSaved }).catch(() => {});
+      showNotification(nextSaved ? 'Meeting saved to bookmarks' : 'Meeting removed from bookmarks');
+    } catch (err: any) {
       console.error('[Dashboard] Failed to toggle save:', err);
     }
   };
 
-  const handleRetry = async (analysis: Analysis, e: React.MouseEvent) => {
+  const handleDeleteMeeting = async (meetingId: string, title: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!window.confirm(`Delete meeting analysis "${title}" from Firestore?`)) return;
     try {
-      await retryAnalysis(analysis.id);
-      fetchStats();
+      await deleteMeetingFromFirestore(meetingId);
+      showNotification('Meeting record deleted from Firestore');
     } catch (err: any) {
-      alert(`Retry failed: ${err.message}`);
+      console.error('[Dashboard] Failed to delete meeting:', err);
     }
   };
 
-  const filteredRecent = stats?.recent.filter(item => {
+  const handleSeedSampleMeeting = async () => {
+    if (!user?.uid) return;
+    try {
+      setIsSeeding(true);
+      await seedDemoMeetingForUser(user.uid);
+      showNotification('Sample newsroom briefing imported to Firestore');
+    } catch (err: any) {
+      alert(`Failed to import sample: ${err.message}`);
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
+  const filteredRecent = meetings.filter(item => {
     if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
     return (
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.headline?.toLowerCase().includes(searchQuery.toLowerCase())
+      item.title.toLowerCase().includes(q) ||
+      item.headline?.toLowerCase().includes(q) ||
+      item.headlines?.primary?.toLowerCase().includes(q)
     );
-  }) || [];
+  });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Toast Feedback */}
+      {actionFeedback && (
+        <div className="fixed top-20 right-6 z-50 bg-slate-900 text-white text-xs px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2 border border-slate-700 animate-fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{actionFeedback}</span>
+        </div>
+      )}
+
       {/* Top Welcome & Action Banner */}
       <div className="bg-slate-900 text-white rounded-lg p-6 sm:p-8 border border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-red-400">
             <span>Newsroom Desk</span>
             <span aria-hidden="true">·</span>
-            <span>Welcome, {user?.name}</span>
+            <span>Welcome, {user?.name || user?.fullName || 'Journalist'}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-editorial font-bold text-white">
             Editorial Meeting Intelligence Center
           </h1>
           <p className="text-slate-300 text-sm max-w-xl">
-            Ingest 1 GiB video meetings, extract verified decisions, and produce broadsheet-grade headlines in English and Tamil.
+            Ingest 1 GiB video meetings, extract verified decisions, and produce broadsheet-grade headlines in English and Tamil with Cloud Firestore persistence.
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
           <button
             onClick={onNewAnalysis}
             className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-red-600 rounded hover:bg-red-700 transition-colors shadow-sm"
@@ -128,8 +179,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <div className="text-3xl font-bold text-slate-900 font-mono-num">
             {isLoading ? '—' : stats?.totalAnalyses ?? 0}
           </div>
-          <div className="text-xs text-slate-500 mt-2">
-            Recorded meetings processed
+          <div className="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
+            <Database className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Synced in Cloud Firestore</span>
           </div>
         </div>
 
@@ -180,142 +232,159 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               Recent Meeting Dispatches
             </h2>
             <p className="text-xs text-slate-500">
-              Latest analyses generated from meeting recordings and transcripts
+              Live updates directly from your private Firestore collection.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+            <div className="relative w-full sm:w-64">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search headlines or titles..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-red-500 w-48 sm:w-64"
+                className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500"
               />
             </div>
             <button
               onClick={onViewAllReports}
-              className="text-xs font-semibold text-red-600 hover:text-red-700 whitespace-nowrap"
+              className="text-xs font-semibold text-red-600 hover:text-red-700 whitespace-nowrap flex items-center gap-1"
             >
-              View All ({stats?.totalAnalyses ?? 0}) →
+              <span>View All</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
-        {/* List Content */}
+        {/* List of Recent Items */}
         {isLoading ? (
-          <div className="p-12 text-center text-xs text-slate-500">
-            Loading recent analyses...
+          <div className="p-12 text-center text-slate-500 text-xs flex flex-col items-center gap-2">
+            <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+            <span>Fetching real-time meetings from Cloud Firestore...</span>
           </div>
         ) : filteredRecent.length === 0 ? (
-          <div className="p-12 text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-              <FileText className="w-6 h-6" />
+          <div className="p-12 text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+              <Video className="w-6 h-6" />
             </div>
-            <h3 className="text-sm font-semibold text-slate-800">No meeting reports yet</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Upload your first video meeting or paste meeting notes to generate journalistic headlines and summaries.
-            </p>
-            <button
-              onClick={onNewAnalysis}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-red-600 rounded hover:bg-red-700 transition-colors shadow-sm"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Create First Analysis</span>
-            </button>
+            <div className="max-w-sm mx-auto space-y-1">
+              <p className="text-sm font-semibold text-slate-900">
+                {searchQuery ? 'No meetings matched your search' : 'No meeting analyses recorded yet'}
+              </p>
+              <p className="text-xs text-slate-500">
+                Upload a meeting video or paste notes to generate news headlines and executive reports.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                onClick={onNewAnalysis}
+                className="px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
+              >
+                Upload First Video
+              </button>
+              <button
+                onClick={handleSeedSampleMeeting}
+                disabled={isSeeding}
+                className="px-4 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded border border-slate-200 transition-colors flex items-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                <span>{isSeeding ? 'Importing...' : 'Load Sample Editorial Meeting'}</span>
+              </button>
+            </div>
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {filteredRecent.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => onOpenReport(item.id)}
-                className="p-5 hover:bg-slate-50/80 transition-colors cursor-pointer group flex flex-col md:flex-row md:items-center justify-between gap-4"
-              >
-                <div className="space-y-1.5 flex-1 min-w-0">
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <span className="font-semibold text-slate-700 uppercase">{item.sourceType}</span>
-                    <span aria-hidden="true">·</span>
-                    <span>{new Date(item.createdAt).toLocaleDateString()}</span>
-                    <span aria-hidden="true">·</span>
-                    <span className="font-medium text-slate-600">
-                      Output: {item.outputLanguage === 'ta' ? 'தமிழ் (Tamil)' : 'English'}
-                    </span>
-                    {item.processingStatus === 'completed' ? (
-                      <span className="inline-flex items-center gap-1 text-emerald-700 font-medium">
-                        <CheckCircle2 className="w-3 h-3" />
-                        <span>Ready</span>
+            {filteredRecent.map((meeting) => {
+              const headlineText =
+                meeting.headlines?.primary ||
+                meeting.headline ||
+                meeting.analysisResult?.primaryHeadline ||
+                'Analysis Processing...';
+              const isVideo = (meeting.mediaType || meeting.sourceType) === 'video';
+
+              return (
+                <div
+                  key={meeting.id}
+                  onClick={() => onOpenReport(meeting.id)}
+                  className="p-5 hover:bg-slate-50 transition-colors cursor-pointer group flex flex-col md:flex-row md:items-center justify-between gap-4"
+                >
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap text-xs text-slate-500">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium text-[11px]">
+                        {isVideo ? <Video className="w-3 h-3 text-red-600" /> : <FileText className="w-3 h-3 text-blue-600" />}
+                        <span className="capitalize">{meeting.mediaType || meeting.sourceType}</span>
                       </span>
-                    ) : item.processingStatus === 'failed' ? (
-                      <span className="inline-flex items-center gap-1 text-red-600 font-medium">
-                        <AlertCircle className="w-3 h-3" />
-                        <span>Failed</span>
+
+                      <span className="text-slate-300">·</span>
+                      <span className="inline-flex items-center gap-1 font-mono-num">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        <span>{new Date(meeting.createdAt).toLocaleDateString()}</span>
                       </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-amber-600 font-medium animate-pulse">
-                        <Clock className="w-3 h-3" />
-                        <span>Processing...</span>
+
+                      <span className="text-slate-300">·</span>
+                      <span className="text-[11px] font-semibold text-slate-600 uppercase">
+                        {meeting.outputLanguage === 'ta' ? 'தமிழ்' : 'English'}
                       </span>
-                    )}
+
+                      {meeting.status === 'completed' && (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-medium">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Verified</span>
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="text-base font-bold text-slate-900 group-hover:text-red-700 transition-colors font-editorial line-clamp-1">
+                      {headlineText}
+                    </h3>
+
+                    <p className="text-xs text-slate-600 line-clamp-2">
+                      {meeting.shortSummary || meeting.analysisResult?.quickSummary || meeting.title}
+                    </p>
                   </div>
 
-                  <h3 className="text-base font-editorial font-bold text-slate-900 group-hover:text-red-700 transition-colors truncate">
-                    {item.headline || item.title}
-                  </h3>
-
-                  <div className="flex items-center gap-3 text-xs text-slate-500">
-                    <span className="text-slate-600">Meeting: {item.title}</span>
-                    {item.fileName && (
-                      <>
-                        <span aria-hidden="true">·</span>
-                        <span className="truncate max-w-[200px]">{item.fileName}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={(e) => handleCopyHeadline(item.headline, item.id, e)}
-                    title="Copy headline"
-                    className="p-2 text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100 transition-colors text-xs flex items-center gap-1"
-                  >
-                    {copiedId === item.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
-
-                  <button
-                    onClick={(e) => handleToggleSave(item, e)}
-                    title={item.isSaved ? 'Remove from saved' : 'Save report'}
-                    className={`p-2 rounded hover:bg-slate-100 transition-colors ${
-                      item.isSaved ? 'text-red-600 fill-red-600' : 'text-slate-400 hover:text-slate-700'
-                    }`}
-                  >
-                    <Bookmark className={`w-3.5 h-3.5 ${item.isSaved ? 'fill-current' : ''}`} />
-                  </button>
-
-                  {item.processingStatus === 'failed' && (
+                  <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
                     <button
-                      onClick={(e) => handleRetry(item, e)}
-                      title="Retry analysis"
-                      className="px-2.5 py-1 text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded hover:bg-red-100 transition-colors flex items-center gap-1"
+                      onClick={(e) => handleCopyHeadline(headlineText, meeting.id, e)}
+                      title="Copy headline"
+                      className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
                     >
-                      <RotateCcw className="w-3 h-3" />
-                      <span>Retry</span>
+                      {copiedId === meeting.id ? (
+                        <Check className="w-4 h-4 text-emerald-600" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
                     </button>
-                  )}
 
-                  <button
-                    onClick={() => onOpenReport(item.id)}
-                    className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded hover:border-slate-300 hover:text-red-700 transition-colors flex items-center gap-1"
-                  >
-                    <span>View Report</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </button>
+                    <button
+                      onClick={(e) => handleToggleSave(meeting, e)}
+                      title={meeting.isSaved ? 'Remove bookmark' : 'Bookmark report'}
+                      className={`p-2 rounded transition-colors ${
+                        meeting.isSaved
+                          ? 'text-red-600 bg-red-50 hover:bg-red-100'
+                          : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Bookmark className="w-4 h-4 fill-current" />
+                    </button>
+
+                    <button
+                      onClick={(e) => handleDeleteMeeting(meeting.id, meeting.title, e)}
+                      title="Delete from Firestore"
+                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+
+                    <span className="text-xs font-semibold text-slate-700 group-hover:text-red-600 pl-2 flex items-center gap-1">
+                      <span>Open Briefing</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

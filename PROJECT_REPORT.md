@@ -254,8 +254,13 @@ The legacy workflow in media houses follows a linear, labor-intensive model:
 - **dotenv (`dotenv: ^17.2.3`):** Environment variable configuration.
 
 ### 3.6 Database & Persistence Architecture
-- **Storage Engine:** Structured relational data persistence implemented in `server/db.ts` utilizing JSON storage with atomic file-swapping (`fs.writeFileSync` to temporary file followed by `fs.renameSync`). This eliminates file-lock contention and guarantees zero corruption across concurrent requests.
-- **Data Entities:** Tables for `users`, `analyses`, `media_files`, `processing_jobs`, and `upload_sessions`.
+- **Cloud Firestore Database:** Google Cloud Firestore NoSQL cloud database configured with custom database instance (`ai-studio-newsroomai-9d3ab883-7c95-4ca6-b017-a544a3031a9c`). Houses collections:
+  - `users/{uid}`: Authenticated user profiles, preferred languages, and account metadata.
+  - `meetings/{meetingId}`: News meeting intelligence documents, multi-angle headlines, structured summaries, categorized points, ratified decisions, and verified action items.
+- **Firebase Authentication:** Managed authentication provider supporting email/password credential workflows, Google OAuth popup sign-in, and self-service password reset dispatch links.
+- **Security Hardening (`firestore.rules`):** Mathematically strict Attribute-Based Access Control (ABAC) ensuring users are restricted to reading, modifying, and listing only documents matching `request.auth.uid == userId`.
+- **Backend Storage Engine:** Local fast cache implemented in `server/db.ts` utilizing JSON storage with atomic file-swapping (`fs.writeFileSync` to temporary file followed by `fs.renameSync`). This eliminates file-lock contention and guarantees zero corruption across concurrent requests.
+- **Data Entities:** Models for `users`, `meetings` / `analyses`, `media_files`, `processing_jobs`, and `upload_sessions`.
 
 ### 3.7 AI Models & API Integration
 - **SDK:** Google Gen AI modern TypeScript SDK (`@google/genai: ^2.4.0`).

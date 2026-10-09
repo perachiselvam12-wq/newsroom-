@@ -4,7 +4,7 @@ import { User, Languages, Shield, LogOut, Check, HardDrive, Key } from 'lucide-r
 
 export const SettingsPage: React.FC = () => {
   const { user, updateUserPreferences, logout } = useAuth();
-  const [name, setName] = useState(user?.name || '');
+  const [name, setName] = useState(user?.fullName || user?.name || '');
   const [preferredLanguage, setPreferredLanguage] = useState<'en' | 'ta'>(user?.preferredLanguage || 'en');
   const [isSaved, setIsSaved] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);

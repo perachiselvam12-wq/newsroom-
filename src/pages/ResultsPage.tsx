@@ -30,6 +30,13 @@ import {
   getExportUrl, 
   getMediaUrl 
 } from '../lib/api';
+import { 
+  getMeetingFromFirestore, 
+  updateMeetingInFirestore, 
+  deleteMeetingFromFirestore,
+  saveMeetingToFirestore 
+} from '../lib/firestoreService';
+import { useAuth } from '../context/AuthContext';
 import type { Analysis, AnalysisResult, ImportantPoint, ActionItem, DecisionItem } from '../types';
 
 interface ResultsPageProps {
@@ -39,6 +46,7 @@ interface ResultsPageProps {
 }
 
 export const ResultsPage: React.FC<ResultsPageProps> = ({ analysisId, onBack, onDeleted }) => {
+  const { user } = useAuth();
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,9 +72,29 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({ analysisId, onBack, on
   const fetchAnalysisData = async () => {
     try {
       setIsLoading(true);
+      // Attempt to load from Firestore first
+      const firestoreMeeting = await getMeetingFromFirestore(analysisId).catch(() => null);
+      if (firestoreMeeting) {
+        setAnalysis(firestoreMeeting);
+        setTitleInput(firestoreMeeting.title);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fallback to backend API
       const res = await getAnalysis(analysisId);
       setAnalysis(res.analysis);
       setTitleInput(res.analysis.title);
+
+      // Cache to Firestore under current user if signed in
+      if (user?.uid && res.analysis) {
+        saveMeetingToFirestore({
+          ...res.analysis,
+          userId: user.uid,
+          mediaType: res.analysis.sourceType || 'video',
+          status: 'completed',
+        }).catch(() => {});
+      }
     } catch (err: any) {
       setError(err?.message || 'Failed to load analysis report.');
     } finally {
@@ -86,8 +114,13 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({ analysisId, onBack, on
 
   const handleSaveToggle = async () => {
     if (!analysis) return;
+    const nextSaved = !analysis.isSaved;
     try {
-      const updated = await updateAnalysis(analysis.id, { isSaved: !analysis.isSaved });
+      // Update Firestore
+      await updateMeetingInFirestore(analysis.id, { isSaved: nextSaved }).catch(() => {});
+      const updated = await updateAnalysis(analysis.id, { isSaved: nextSaved }).catch(() => ({
+        analysis: { ...analysis, isSaved: nextSaved }
+      }));
       setAnalysis(updated.analysis);
     } catch (err: any) {
       console.error('Failed to toggle save:', err);
@@ -96,8 +129,13 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({ analysisId, onBack, on
 
   const handleSaveTitle = async () => {
     if (!analysis || !titleInput.trim()) return;
+    const newTitle = titleInput.trim();
     try {
-      const updated = await updateAnalysis(analysis.id, { title: titleInput.trim() });
+      // Update Firestore
+      await updateMeetingInFirestore(analysis.id, { title: newTitle }).catch(() => {});
+      const updated = await updateAnalysis(analysis.id, { title: newTitle }).catch(() => ({
+        analysis: { ...analysis, title: newTitle }
+      }));
       setAnalysis(updated.analysis);
       setIsEditingTitle(false);
     } catch (err: any) {
@@ -108,7 +146,11 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({ analysisId, onBack, on
   const handleSetPrimaryHeadline = async (headline: string) => {
     if (!analysis) return;
     try {
-      const updated = await updateAnalysis(analysis.id, { headline });
+      // Update Firestore
+      await updateMeetingInFirestore(analysis.id, { headline }).catch(() => {});
+      const updated = await updateAnalysis(analysis.id, { headline }).catch(() => ({
+        analysis: { ...analysis, headline }
+      }));
       setAnalysis(updated.analysis);
       setSelectedHeadStyle('primary');
       copyToClipboard(headline, 'set-primary');
@@ -121,7 +163,9 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({ analysisId, onBack, on
     if (!analysis) return;
     try {
       setIsDeleting(true);
-      await deleteAnalysis(analysis.id);
+      // Delete from Firestore
+      await deleteMeetingFromFirestore(analysis.id).catch(() => {});
+      await deleteAnalysis(analysis.id).catch(() => {});
       onDeleted();
     } catch (err: any) {
       alert(`Delete failed: ${err.message}`);

@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { 
+  getUserMeetingsFromFirestore, 
+  updateMeetingInFirestore, 
+  deleteMeetingFromFirestore 
+} from '../lib/firestoreService';
 import { getAnalyses, deleteAnalysis, updateAnalysis } from '../lib/api';
-import type { Analysis } from '../types';
+import type { Meeting } from '../types';
 import { 
   Search, 
   Filter, 
@@ -22,7 +28,8 @@ interface HistoryPageProps {
 }
 
 export const HistoryPage: React.FC<HistoryPageProps> = ({ onOpenReport, onNewAnalysis }) => {
-  const [analyses, setAnalyses] = useState<Analysis[]>([]);
+  const { user } = useAuth();
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // Filters & Search
@@ -30,27 +37,32 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onOpenReport, onNewAna
   const [sourceType, setSourceType] = useState('');
   const [language, setLanguage] = useState('');
   const [sort, setSort] = useState<'newest' | 'oldest'>('newest');
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
 
   // Deletion modal
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchList = async () => {
+    if (!user?.uid) {
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
-      const res = await getAnalyses({
+      // Fetch directly from Firestore with user-scoped filter
+      const data = await getUserMeetingsFromFirestore(user.uid, {
         search: search || undefined,
         sourceType: sourceType || undefined,
         language: language || undefined,
-        sort,
-        page,
-        limit: 10
       });
-      setAnalyses(res.analyses);
-      setTotalPages(res.pagination.totalPages);
-      setTotalCount(res.pagination.total);
+
+      // Sort
+      const sorted = [...data].sort((a, b) => {
+        const timeA = new Date(a.createdAt).getTime();
+        const timeB = new Date(b.createdAt).getTime();
+        return sort === 'newest' ? timeB - timeA : timeA - timeB;
+      });
+
+      setMeetings(sorted);
     } catch (err) {
       console.error('[History] Fetch failed:', err);
     } finally {
@@ -60,12 +72,14 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onOpenReport, onNewAna
 
   useEffect(() => {
     fetchList();
-  }, [search, sourceType, language, sort, page]);
+  }, [user?.uid, search, sourceType, language, sort]);
 
-  const handleToggleSave = async (item: Analysis, e: React.MouseEvent) => {
+  const handleToggleSave = async (item: Meeting, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await updateAnalysis(item.id, { isSaved: !item.isSaved });
+      const nextSaved = !item.isSaved;
+      await updateMeetingInFirestore(item.id, { isSaved: nextSaved });
+      updateAnalysis(item.id, { isSaved: nextSaved }).catch(() => {});
       fetchList();
     } catch (err) {
       console.error('Toggle save failed:', err);
@@ -75,7 +89,8 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onOpenReport, onNewAna
   const confirmDelete = async () => {
     if (!deletingId) return;
     try {
-      await deleteAnalysis(deletingId);
+      await deleteMeetingFromFirestore(deletingId);
+      deleteAnalysis(deletingId).catch(() => {});
       setDeletingId(null);
       fetchList();
     } catch (err: any) {
@@ -94,7 +109,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onOpenReport, onNewAna
             All Meeting Analyses
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Search, filter, and inspect previous meeting reports and headline digests.
+            Private Firestore collection for {user?.name || 'Journalist'}. Search, filter, and inspect previous meeting reports.
           </p>
         </div>
 
@@ -102,194 +117,165 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onOpenReport, onNewAna
           onClick={onNewAnalysis}
           className="px-4 py-2 text-xs font-semibold text-white bg-red-600 rounded hover:bg-red-700 transition-colors shadow-sm self-start sm:self-auto"
         >
-          + New Analysis
+          New Meeting Analysis
         </button>
       </div>
 
-      {/* FILTER & SEARCH BAR */}
-      <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
-        {/* Search */}
-        <div className="lg:col-span-2 relative">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+      {/* Filter and Search Controls */}
+      <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="relative">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
           <input
             type="text"
-            placeholder="Search titles, headlines, or content..."
+            placeholder="Search headline or title..."
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-red-500"
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500"
           />
         </div>
 
-        {/* Source Type Filter */}
         <div>
           <select
             value={sourceType}
-            onChange={(e) => {
-              setSourceType(e.target.value);
-              setPage(1);
-            }}
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded font-medium text-slate-700"
+            onChange={(e) => setSourceType(e.target.value)}
+            className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500"
           >
             <option value="">All Source Types</option>
             <option value="video">Video Uploads</option>
             <option value="audio">Audio Uploads</option>
-            <option value="text">Transcript Notes</option>
+            <option value="text">Transcript / Text</option>
           </select>
         </div>
 
-        {/* Language Filter */}
         <div>
           <select
             value={language}
-            onChange={(e) => {
-              setLanguage(e.target.value);
-              setPage(1);
-            }}
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded font-medium text-slate-700"
+            onChange={(e) => setLanguage(e.target.value)}
+            className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500"
           >
-            <option value="">All Languages</option>
-            <option value="en">English Output</option>
-            <option value="ta">Tamil Output (தமிழ்)</option>
+            <option value="">All Output Languages</option>
+            <option value="en">English (EN)</option>
+            <option value="ta">Tamil (தமிழ்)</option>
           </select>
         </div>
 
-        {/* Sort */}
         <div>
           <select
             value={sort}
-            onChange={(e) => {
-              setSort(e.target.value as 'newest' | 'oldest');
-              setPage(1);
-            }}
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded font-medium text-slate-700"
+            onChange={(e) => setSort(e.target.value as any)}
+            className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500"
           >
-            <option value="newest">Sort: Newest First</option>
+            <option value="newest">Sort: Most Recent</option>
             <option value="oldest">Sort: Oldest First</option>
           </select>
         </div>
       </div>
 
-      {/* LIST OR EMPTY STATE */}
+      {/* Results Table */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
         {isLoading ? (
-          <div className="p-16 text-center text-xs text-slate-500">
-            Loading reports archive...
+          <div className="p-16 text-center text-xs text-slate-500 flex flex-col items-center gap-2">
+            <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+            <span>Querying Cloud Firestore meetings...</span>
           </div>
-        ) : analyses.length === 0 ? (
+        ) : meetings.length === 0 ? (
           <div className="p-16 text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-              <FileText className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+              <Filter className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-semibold text-slate-800">No matching reports found</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Try adjusting your search criteria or create a new meeting analysis.
-            </p>
+            <p className="text-sm font-semibold text-slate-800">No meeting reports found</p>
+            <p className="text-xs text-slate-500">Try modifying your filter parameters or start a new analysis.</p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
-            {analyses.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => onOpenReport(item.id)}
-                className="p-5 hover:bg-slate-50/80 transition-colors cursor-pointer group flex flex-col md:flex-row md:items-center justify-between gap-4"
-              >
-                <div className="space-y-1.5 flex-1 min-w-0">
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <span className="font-semibold text-slate-700 uppercase">{item.sourceType}</span>
-                    <span aria-hidden="true">·</span>
-                    <span className="font-mono-num">{new Date(item.createdAt).toLocaleDateString()}</span>
-                    <span aria-hidden="true">·</span>
-                    <span className="font-medium text-red-700">
-                      Output: {item.outputLanguage === 'ta' ? 'தமிழ்' : 'English'}
-                    </span>
-                    {item.processingStatus === 'completed' ? (
-                      <span className="inline-flex items-center gap-1 text-emerald-700 font-medium">
-                        <CheckCircle2 className="w-3 h-3" />
-                        <span>Ready</span>
-                      </span>
-                    ) : item.processingStatus === 'failed' ? (
-                      <span className="inline-flex items-center gap-1 text-red-600 font-medium">
-                        <AlertCircle className="w-3 h-3" />
-                        <span>Failed</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-amber-600 font-medium animate-pulse">
-                        <Clock className="w-3 h-3" />
-                        <span>Processing...</span>
-                      </span>
-                    )}
-                  </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="py-3 px-4">Meeting Title & Headline</th>
+                  <th className="py-3 px-4">Source</th>
+                  <th className="py-3 px-4">Language</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs">
+                {meetings.map((item) => {
+                  const headlineText = item.headlines?.primary || item.headline || item.analysisResult?.primaryHeadline || item.title;
+                  const isVideo = (item.mediaType || item.sourceType) === 'video';
 
-                  <h3 className="text-base font-editorial font-bold text-slate-900 group-hover:text-red-700 transition-colors truncate">
-                    {item.headline || item.title}
-                  </h3>
+                  return (
+                    <tr
+                      key={item.id}
+                      onClick={() => onOpenReport(item.id)}
+                      className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
+                    >
+                      <td className="py-3.5 px-4 max-w-md">
+                        <div className="font-semibold text-slate-900 group-hover:text-red-700 transition-colors line-clamp-1 font-editorial text-sm">
+                          {headlineText}
+                        </div>
+                        <div className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                          {item.title}
+                        </div>
+                      </td>
 
-                  <div className="text-xs text-slate-500 truncate">
-                    Meeting Subject: <span className="text-slate-700 font-medium">{item.title}</span>
-                    {item.fileName && <span> · File: {item.fileName}</span>}
-                  </div>
-                </div>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                          {isVideo ? <Video className="w-3 h-3 text-red-600" /> : <FileText className="w-3 h-3 text-blue-600" />}
+                          <span className="capitalize">{item.mediaType || item.sourceType}</span>
+                        </span>
+                      </td>
 
-                <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={(e) => handleToggleSave(item, e)}
-                    title={item.isSaved ? 'Saved to library' : 'Save report'}
-                    className={`p-2 rounded hover:bg-slate-100 transition-colors ${
-                      item.isSaved ? 'text-red-600 fill-red-600' : 'text-slate-400 hover:text-slate-700'
-                    }`}
-                  >
-                    <Bookmark className={`w-3.5 h-3.5 ${item.isSaved ? 'fill-current' : ''}`} />
-                  </button>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="text-[11px] font-semibold text-slate-700">
+                          {item.outputLanguage === 'ta' ? 'தமிழ்' : 'English'}
+                        </span>
+                      </td>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeletingId(item.id);
-                    }}
-                    title="Delete report"
-                    className="p-2 text-slate-400 hover:text-red-600 rounded hover:bg-slate-100 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-medium">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span>Complete</span>
+                        </span>
+                      </td>
 
-                  <button
-                    onClick={() => onOpenReport(item.id)}
-                    className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded hover:border-slate-300 hover:text-red-700 transition-colors flex items-center gap-1 shadow-xs"
-                  >
-                    <span>Open Report</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                      <td className="py-3.5 px-4 whitespace-nowrap text-slate-500 font-mono-num text-[11px]">
+                        {new Date(item.createdAt).toLocaleDateString()}
+                      </td>
 
-        {/* PAGINATION STRIP */}
-        {totalPages > 1 && (
-          <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs text-slate-600 font-mono-num">
-            <div>
-              Showing page {page} of {totalPages} ({totalCount} total)
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                disabled={page <= 1}
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                className="px-3 py-1 bg-white border border-slate-200 rounded disabled:opacity-40"
-              >
-                Previous
-              </button>
-              <button
-                disabled={page >= totalPages}
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                className="px-3 py-1 bg-white border border-slate-200 rounded disabled:opacity-40"
-              >
-                Next
-              </button>
-            </div>
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => handleToggleSave(item, e)}
+                            title={item.isSaved ? 'Unsave' : 'Save'}
+                            className={`p-1.5 rounded transition-colors ${
+                              item.isSaved ? 'text-red-600 bg-red-50' : 'text-slate-400 hover:text-slate-700'
+                            }`}
+                          >
+                            <Bookmark className="w-3.5 h-3.5 fill-current" />
+                          </button>
+
+                          <button
+                            onClick={() => setDeletingId(item.id)}
+                            title="Delete"
+                            className="p-1.5 text-slate-400 hover:text-red-600 rounded transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            onClick={() => onOpenReport(item.id)}
+                            className="p-1.5 text-slate-400 hover:text-red-600 rounded transition-colors"
+                          >
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -300,7 +286,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onOpenReport, onNewAna
           <div className="bg-white rounded-lg p-6 max-w-sm w-full space-y-4 shadow-xl">
             <h3 className="text-base font-bold text-slate-900 font-editorial">Confirm Deletion</h3>
             <p className="text-xs text-slate-600">
-              Are you sure you want to delete this meeting analysis and all associated media files?
+              Are you sure you want to delete this meeting dispatch from Firestore? This action is permanent.
             </p>
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
@@ -311,9 +297,9 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onOpenReport, onNewAna
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-3.5 py-1.5 text-xs font-semibold text-white bg-red-600 rounded hover:bg-red-700"
+                className="px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded hover:bg-red-700"
               >
-                Delete
+                Delete Dispatch
               </button>
             </div>
           </div>

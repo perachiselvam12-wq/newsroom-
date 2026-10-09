@@ -30,6 +30,19 @@ export function verifyToken(token: string): { id: string; email: string; role: s
   try {
     return jwt.verify(token, JWT_SECRET) as { id: string; email: string; role: string };
   } catch {
+    // If not signed with our secret, attempt decoding as a Firebase ID token (JWT)
+    try {
+      const decoded = jwt.decode(token) as any;
+      if (decoded && (decoded.sub || decoded.user_id)) {
+        return {
+          id: decoded.sub || decoded.user_id,
+          email: decoded.email || 'user@firebase.auth',
+          role: 'journalist'
+        };
+      }
+    } catch {
+      return null;
+    }
     return null;
   }
 }
@@ -48,10 +61,22 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
     return;
   }
 
-  const user = db.getUserById(decoded.id);
+  let user = db.getUserById(decoded.id);
   if (!user) {
-    res.status(401).json({ error: 'Unauthorized: User not found' });
-    return;
+    // Auto-register Firebase authenticated user into local cache for backend foreign keys
+    const newUser: User = {
+      id: decoded.id,
+      name: decoded.email.split('@')[0] || 'Newsroom User',
+      email: decoded.email,
+      passwordHash: '', // Managed by Firebase Authentication
+      role: 'journalist',
+      preferredLanguage: 'en',
+      theme: 'light',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    db.createUser(newUser);
+    user = newUser;
   }
 
   req.user = user;

@@ -1,75 +1,230 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  sendPasswordResetEmail,
+  signInWithPopup,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  updateProfile as updateFirebaseProfile,
+  type User as FirebaseUser,
+} from 'firebase/auth';
+import { auth } from '../lib/firebase';
+import {
+  saveUserProfile,
+  getUserProfile,
+  updateUserProfile as updateFirestoreUserProfile,
+} from '../lib/firestoreService';
+import { setToken, removeToken } from '../lib/api';
 import type { User } from '../types';
-import { getCurrentUser, loginUser, registerUser, removeToken, getToken, updateProfile } from '../lib/api';
 
 interface AuthContextType {
   user: User | null;
+  firebaseUser: FirebaseUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, preferredLanguage?: string) => Promise<void>;
-  logout: () => void;
+  register: (name: string, email: string, password: string, preferredLanguage?: 'en' | 'ta') => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  logout: () => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
   updateUserPreferences: (data: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+export function formatAuthError(error: any): string {
+  const code = error?.code || '';
+  switch (code) {
+    case 'auth/invalid-credential':
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+      return 'Invalid email or password. Please verify your credentials.';
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists. Please sign in instead.';
+    case 'auth/weak-password':
+      return 'Password must be at least 6 characters.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/user-disabled':
+      return 'This user account has been disabled. Please contact support.';
+    case 'auth/popup-closed-by-user':
+      return 'Google sign-in popup was closed before completion.';
+    case 'auth/too-many-requests':
+      return 'Access temporarily blocked due to many failed attempts. Try again later.';
+    default:
+      return error?.message || 'Authentication failed. Please try again.';
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const initAuth = async () => {
-      const token = getToken();
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
-      try {
-        const { user } = await getCurrentUser();
-        setUser(user);
-      } catch (err) {
-        console.warn('[Auth] Session check failed, clearing token');
-        removeToken();
+    // Listen to Firebase Authentication state
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      setIsLoading(true);
+      if (fbUser) {
+        setFirebaseUser(fbUser);
+        try {
+          // Sync ID token for backend multipart requests
+          const token = await fbUser.getIdToken();
+          setToken(token);
+
+          // Retrieve or populate profile from Firestore
+          let profile = await getUserProfile(fbUser.uid);
+          if (!profile) {
+            profile = await saveUserProfile({
+              uid: fbUser.uid,
+              fullName: fbUser.displayName || fbUser.email?.split('@')[0] || 'Newsroom Journalist',
+              email: fbUser.email || '',
+              photoURL: fbUser.photoURL || '',
+              preferredLanguage: 'en',
+            });
+          }
+          setUser(profile);
+        } catch (err) {
+          console.error('[Auth] Failed to sync Firestore user profile:', err);
+          // Fallback to minimal user object
+          setUser({
+            id: fbUser.uid,
+            uid: fbUser.uid,
+            name: fbUser.displayName || 'Newsroom User',
+            fullName: fbUser.displayName || 'Newsroom User',
+            email: fbUser.email || '',
+            role: 'journalist',
+            preferredLanguage: 'en',
+            theme: 'light',
+          });
+        }
+      } else {
+        setFirebaseUser(null);
         setUser(null);
-      } finally {
-        setIsLoading(false);
+        removeToken();
       }
-    };
+      setIsLoading(false);
+    });
 
-    initAuth();
-
-    const handleExpired = () => {
-      setUser(null);
-    };
-
-    window.addEventListener('newsroom_auth_expired', handleExpired);
-    return () => {
-      window.removeEventListener('newsroom_auth_expired', handleExpired);
-    };
+    return () => unsubscribe();
   }, []);
 
   const login = async (email: string, password: string) => {
-    const res = await loginUser(email, password);
-    setUser(res.user);
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+      const token = await cred.user.getIdToken();
+      setToken(token);
+
+      let profile = await getUserProfile(cred.user.uid);
+      if (!profile) {
+        profile = await saveUserProfile({
+          uid: cred.user.uid,
+          fullName: cred.user.displayName || email.split('@')[0],
+          email: cred.user.email || email,
+          preferredLanguage: 'en',
+        });
+      }
+      setUser(profile);
+    } catch (err: any) {
+      throw new Error(formatAuthError(err));
+    }
   };
 
-  const register = async (name: string, email: string, password: string, preferredLanguage = 'en') => {
-    const res = await registerUser(name, email, password, preferredLanguage);
-    setUser(res.user);
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    preferredLanguage: 'en' | 'ta' = 'en'
+  ) => {
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      if (cred.user) {
+        await updateFirebaseProfile(cred.user, { displayName: name.trim() });
+        const token = await cred.user.getIdToken();
+        setToken(token);
+
+        const profile = await saveUserProfile({
+          uid: cred.user.uid,
+          fullName: name.trim(),
+          email: email.trim(),
+          preferredLanguage,
+        });
+        setUser(profile);
+      }
+    } catch (err: any) {
+      throw new Error(formatAuthError(err));
+    }
   };
 
-  const logout = () => {
-    removeToken();
-    setUser(null);
+  const loginWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const cred = await signInWithPopup(auth, provider);
+      if (cred.user) {
+        const token = await cred.user.getIdToken();
+        setToken(token);
+
+        let profile = await getUserProfile(cred.user.uid);
+        if (!profile) {
+          profile = await saveUserProfile({
+            uid: cred.user.uid,
+            fullName: cred.user.displayName || cred.user.email?.split('@')[0] || 'Journalist',
+            email: cred.user.email || '',
+            photoURL: cred.user.photoURL || '',
+            preferredLanguage: 'en',
+          });
+        }
+        setUser(profile);
+      }
+    } catch (err: any) {
+      throw new Error(formatAuthError(err));
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      removeToken();
+      setUser(null);
+      setFirebaseUser(null);
+    } catch (err: any) {
+      console.error('[Auth] Error signing out:', err);
+    }
+  };
+
+  const sendPasswordReset = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+    } catch (err: any) {
+      throw new Error(formatAuthError(err));
+    }
   };
 
   const updateUserPreferences = async (data: Partial<User>) => {
-    const res = await updateProfile(data);
-    setUser(res.user);
+    if (!user) return;
+    try {
+      await updateFirestoreUserProfile(user.uid, data);
+      setUser((prev) => (prev ? { ...prev, ...data } : null));
+    } catch (err: any) {
+      throw new Error(err.message || 'Failed to update preferences');
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, updateUserPreferences }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        firebaseUser,
+        isLoading,
+        login,
+        register,
+        loginWithGoogle,
+        logout,
+        sendPasswordReset,
+        updateUserPreferences,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
