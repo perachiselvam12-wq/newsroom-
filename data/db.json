@@ -1,0 +1,461 @@
+{
+  "users": [
+    {
+      "id": "usr_test_1",
+      "name": "Test Journalist",
+      "email": "test@newsroom.ai",
+      "passwordHash": "$2b$10$3s2CWhvts8Rm6sUM7cEpXO/VwfE4NhefbfKMp/yZ8XXk4gIaafwm2",
+      "role": "journalist",
+      "preferredLanguage": "en",
+      "theme": "light",
+      "createdAt": "2026-10-09T08:46:23.924Z",
+      "updatedAt": "2026-10-09T08:46:23.924Z"
+    },
+    {
+      "id": "usr_default_editor",
+      "name": "Elena Rostova",
+      "email": "editor@newsroom.ai",
+      "passwordHash": "$2b$10$MpFqwUthKJigcJYGaXbH0.KKkGXHz8UsIYFxPMFWhLUjPgtNFRiP.",
+      "role": "editor",
+      "preferredLanguage": "en",
+      "theme": "light",
+      "createdAt": "2026-10-09T08:47:16.718Z",
+      "updatedAt": "2026-10-09T08:47:16.718Z"
+    },
+    {
+      "id": "usr_29151dcd-f2ca-4039-a5fe-dd93b775d241",
+      "name": "selva",
+      "email": "sin751436@gmail.com",
+      "passwordHash": "$2b$10$recTvUemOTUbNUCd6M4zfeA1dsaPGTmXhwedZVaE9hLlKBheqq1TG",
+      "role": "journalist",
+      "preferredLanguage": "en",
+      "theme": "light",
+      "createdAt": "2026-10-09T08:49:37.579Z",
+      "updatedAt": "2026-10-09T08:49:37.580Z"
+    }
+  ],
+  "analyses": [
+    {
+      "id": "ans_seed_demo_1",
+      "userId": "usr_default_editor",
+      "title": "Global Autonomous Systems Council & Commercial Rollout Ratification",
+      "sourceType": "video",
+      "fileName": "autonomous_drone_council_session.mp4",
+      "fileSize": 485000000,
+      "sourceLanguage": "en",
+      "outputLanguage": "en",
+      "uploadStatus": "completed",
+      "processingStatus": "completed",
+      "headline": "Autonomous Robotics Council Ratifies Commercial Falcon-X Deployment for Q4",
+      "isSaved": true,
+      "analysisResult": {
+        "primaryHeadline": "Autonomous Robotics Council Ratifies Commercial Falcon-X Deployment for Q4",
+        "alternativeHeadlines": {
+          "breaking": "ALERT: Commercial Falcon-X Drone Rollout Set for November 15 Following FAA BVLOS Clearance",
+          "newspaper": "Engineering Leadership Greenlights High-Density Battery Architecture for Next-Gen Fleet",
+          "formal": "Executive Council Resolution: Commercial Aviation Rollout Protocol and Safety Verification",
+          "digital": "Falcon-X Passes Crucial High-Temperature Stress Tests as Council Confirms 5,000-Unit Run",
+          "social": "Falcon-X deployment ratified for Nov 15! 64-minute flight endurance under full sensor payload confirmed."
+        },
+        "quickSummary": "The Global Autonomous Systems Council held a decisive briefing to evaluate commercial deployment readiness for the Falcon-X autonomous drone platform. VP of Hardware Marcus Sterling verified that revised lithium-silicon battery cells achieved 420 Wh/kg, delivering 64 minutes of continuous flight duration with thermal operating limits maintained below 52°C. Dr. Evelyn Vance officially ratified the November 15 commercial launch date, directing manufacturing to deliver 5,000 production units by December 1.",
+        "detailedSummary": "The Council convened with senior leadership from Systems Architecture, Hardware Engineering, and Aviation Regulatory Affairs. \n\nTechnical Benchmarking:\nMarcus Sterling detailed extensive multi-day endurance testing conducted at the Nevada testing grounds. Under 45°C ambient desert conditions, thermal envelopes peaked safely at 52°C, well below the mandatory 60°C emergency threshold. Cell energy density reached 420 Wh/kg, expanding operational flight windows to 64 minutes under full sensor and payload suites.\n\nRegulatory Compliance:\nLiam Davis confirmed receipt of the FAA Part 107 Beyond Visual Line of Sight (BVLOS) commercial waiver across designated regional corridors in Nevada and Arizona, clearing the final administrative obstacle.\n\nFirmware & Safety Directives:\nLead Architect Priya Sundaram reported low-probability optical edge-case reflections in dense marine fog. Chief Technology Officer Dr. Evelyn Vance directed immediate deployment of firmware revision 4.2 integrating LiDAR sensor fusion, mandating full test suite sign-off by October 30 before flight authorization.",
+        "executiveSummary": "Executive council ratified the November 15 commercial rollout of the Falcon-X platform. Crucial milestones met: FAA BVLOS waiver secured, thermal operating limits verified under 52°C, and battery endurance expanded to 64 minutes. Manufacturing committed to deliver 5,000 units by December 1, with firmware validation due by October 30.",
+        "importantPoints": [
+          {
+            "id": "pt_1",
+            "category": "Main Announcements",
+            "title": "Official Falcon-X Launch Date Set for November 15",
+            "explanation": "Council executive leadership established November 15 as the immutable public unveiling date.",
+            "importance": "High",
+            "speaker": "Dr. Evelyn Vance",
+            "timestamp": "06:45",
+            "excerpt": "We officially ratify the November 15 launch date for Falcon-X."
+          },
+          {
+            "id": "pt_2",
+            "category": "Important Facts & Figures",
+            "title": "Battery Energy Density Achieves 420 Wh/kg",
+            "explanation": "Lithium-silicon cell architecture completed testing, securing 64 minutes sustained flight time.",
+            "importance": "High",
+            "speaker": "Marcus Sterling",
+            "timestamp": "01:30",
+            "excerpt": "It yields 420 Watt-hours per kilogram, which gives the Falcon-X drone a flight duration of 64 minutes."
+          },
+          {
+            "id": "pt_3",
+            "category": "Decisions Made",
+            "title": "FAA Part 107 BVLOS Waiver Formally Secured",
+            "explanation": "Federal aviation waiver authorizes autonomous operations in Nevada and Arizona commercial corridors.",
+            "importance": "High",
+            "speaker": "Liam Davis",
+            "timestamp": "05:15",
+            "excerpt": "The Federal Aviation Administration granted our Part 107 BVLOS waiver on Tuesday."
+          },
+          {
+            "id": "pt_4",
+            "category": "Problems Identified",
+            "title": "Optical Reflection Edge Cases in Marine Fog",
+            "explanation": "Neural network obstacle detection exhibited minor false positives under high-humidity marine conditions.",
+            "importance": "Medium",
+            "speaker": "Priya Sundaram",
+            "timestamp": "08:20",
+            "excerpt": "We are still seeing edge-case reflections in foggy conditions."
+          },
+          {
+            "id": "pt_5",
+            "category": "Proposed Solutions",
+            "title": "Sensor Fusion Firmware 4.2 Integration",
+            "explanation": "Engineers directed to couple LiDAR distance mapping with computer vision to filter fog artifacts.",
+            "importance": "High",
+            "speaker": "Dr. Evelyn Vance",
+            "timestamp": "09:10",
+            "excerpt": "Deploy model version 4.2 with LiDAR sensor fusion to address fog reflections."
+          }
+        ],
+        "decisions": [
+          {
+            "id": "dec_1",
+            "decision": "Falcon-X commercial announcement and press briefing officially locked for November 15, 2026.",
+            "context": "All regulatory and thermal performance criteria met or exceeded expectations.",
+            "isConfirmed": true,
+            "decidedBy": "Dr. Evelyn Vance (CTO)",
+            "timestamp": "06:45"
+          },
+          {
+            "id": "dec_2",
+            "decision": "Production production ramp of 5,000 units authorized for completion by December 1, 2026.",
+            "context": "Supply chain contracts and Nevada manufacturing cell capacity verified.",
+            "isConfirmed": true,
+            "decidedBy": "Marcus Sterling (VP Hardware)",
+            "timestamp": "07:15"
+          }
+        ],
+        "actionItems": [
+          {
+            "id": "act_1",
+            "task": "Complete manufacturing and hardware production sign-off for first 500 units",
+            "assignedTo": "Marcus Sterling",
+            "deadline": "October 25, 2026",
+            "status": "Pending",
+            "timestamp": "07:20"
+          },
+          {
+            "id": "act_2",
+            "task": "Deploy and validate sensor fusion firmware 4.2 with LiDAR fog filtering",
+            "assignedTo": "Priya Sundaram",
+            "deadline": "October 30, 2026",
+            "status": "Pending",
+            "timestamp": "09:20"
+          },
+          {
+            "id": "act_3",
+            "task": "Finalize press briefing press kits and technical specification sheets",
+            "assignedTo": "Liam Davis",
+            "deadline": "November 8, 2026",
+            "status": "Pending",
+            "timestamp": "10:15"
+          }
+        ],
+        "keyFacts": [
+          {
+            "id": "kf_1",
+            "category": "Number",
+            "item": "420 Wh/kg",
+            "context": "Battery energy density achieved on lithium-silicon cells."
+          },
+          {
+            "id": "kf_2",
+            "category": "Number",
+            "item": "64 Minutes",
+            "context": "Maximum sustained flight duration under full operational sensor payload."
+          },
+          {
+            "id": "kf_3",
+            "category": "Organization",
+            "item": "Federal Aviation Administration (FAA)",
+            "context": "Regulatory body granting the Part 107 BVLOS waiver."
+          },
+          {
+            "id": "kf_4",
+            "category": "Date",
+            "item": "November 15, 2026",
+            "context": "Official launch date ratified by council."
+          }
+        ],
+        "pendingQuestions": [
+          "Will international aerospace regulatory approvals (EASA) follow the same timeline as the FAA BVLOS waiver?",
+          "What is the thermal degradation coefficient after 500 charge-discharge cycles in sub-zero winter deployments?"
+        ],
+        "transcriptSegments": [
+          {
+            "id": "tr_1",
+            "speaker": "Dr. Evelyn Vance",
+            "timestamp": "00:00",
+            "text": "Good morning team. Today our sole agenda is finalizing our commercial drone deployment timeline and resolving the battery density bottleneck before our public press conference on November 15."
+          },
+          {
+            "id": "tr_2",
+            "speaker": "Marcus Sterling",
+            "timestamp": "01:30",
+            "text": "The revised lithium-silicon cell test completed yesterday at our Nevada testing facility. It yields 420 Watt-hours per kilogram, which gives the Falcon-X drone a flight duration of 64 minutes under full sensor payload."
+          },
+          {
+            "id": "tr_3",
+            "speaker": "Liam Davis",
+            "timestamp": "05:15",
+            "text": "From a regulatory standpoint, the Federal Aviation Administration granted our Part 107 BVLOS waiver on Tuesday for commercial corridors in Nevada and Arizona."
+          },
+          {
+            "id": "tr_4",
+            "speaker": "Dr. Evelyn Vance",
+            "timestamp": "06:45",
+            "text": "This is decisive. We officially ratify the November 15 launch date for Falcon-X. Let us make sure production reaches 5,000 units by December 1."
+          }
+        ],
+        "detectedLanguage": "en"
+      },
+      "createdAt": "2026-10-09T08:47:16.719Z",
+      "updatedAt": "2026-10-09T08:47:16.719Z"
+    },
+    {
+      "id": "ans_afc30701-5381-44c4-917c-3d7ac629c231",
+      "userId": "usr_29151dcd-f2ca-4039-a5fe-dd93b775d241",
+      "title": "Press meet  protest  தமழநட ஏன silent ஆ இரகக  sir  sun news   prakash raj",
+      "sourceType": "video",
+      "fileName": "press-meet--protest--தமழநட-ஏன-silent-ஆ-இரகக--sir--sun-news---prakash-raj.mp4",
+      "fileSize": 15461774,
+      "mediaPath": "/app/applet/data/uploads/upl_20b0b978-a115-40fb-9d65-3b8adbf72816_press-meet--protest--_____-__-silent-_-____--sir--sun-news---prakash-raj.mp4",
+      "sourceLanguage": "auto",
+      "outputLanguage": "en",
+      "uploadStatus": "completed",
+      "processingStatus": "completed",
+      "headline": "Actor Prakash Raj Demands Electoral Commission Reform and Judicial Oversight Amid Voting Rights Concerns",
+      "isSaved": false,
+      "createdAt": "2026-10-09T09:01:18.439Z",
+      "updatedAt": "2026-10-09T09:34:23.495Z",
+      "jobId": "job_bebd91bc-333d-46a1-a308-d785b651eb56",
+      "analysisResult": {
+        "primaryHeadline": "Actor Prakash Raj Demands Electoral Commission Reform and Judicial Oversight Amid Voting Rights Concerns",
+        "alternativeHeadlines": {
+          "breaking": "Prakash Raj Calls for Immediate Investigation into Election Commission Procedures",
+          "newspaper": "Actor-Activist Prakash Raj Questions Electoral Integrity, Demands Judicial Intervention",
+          "formal": "Public Appeal for Electoral Reform and Transparency in Election Commission Processes",
+          "digital": "Prakash Raj Slams Election Commission, Demands Accountability for Voter Disenfranchisement",
+          "social": "Prakash Raj: 'Our voting rights are under threat, we must stand up'"
+        },
+        "quickSummary": "Actor and activist Prakash Raj has launched a scathing critique of the Election Commission of India, alleging systemic failures and procedural complexities that disenfranchise voters. He demanded the removal of Election Commissioner Gyanesh Kumar, a judicial investigation into recent electoral processes, and the repeal of rules granting judicial immunity to election officials. Raj also questioned the silence of Tamil Nadu regarding these national democratic concerns.",
+        "detailedSummary": "In a press interaction, Prakash Raj highlighted concerns regarding the erosion of democratic processes in India, drawing parallels to military-led regimes in neighboring countries. He argued that while India's Constitution protects against military coups, the integrity of the electoral process is being undermined. Raj specifically criticized the Election Commission's handling of voter registration, citing his own experience with the 'Form 6' requirement for address changes, which he claims is unnecessarily complicated and punitive. He called for a judicial audit of all Election Commission decisions since 2023, the removal of judicial immunity for officials, and a thorough investigation into the handling of EVMs. Furthermore, he expressed disappointment at the perceived silence of Tamil Nadu, a state historically known for its robust political activism, urging citizens to recognize the existential threat to their voting rights.",
+        "executiveSummary": "Prakash Raj has issued a formal demand for a comprehensive judicial review of the Election Commission of India's operations since 2023. Key demands include the removal of Election Commissioner Gyanesh Kumar, the abolition of judicial immunity for electoral officials, and a simplification of voter registration processes. The actor emphasizes that current procedural hurdles are effectively disenfranchising citizens and warns of a growing national movement if these issues are not addressed by the Supreme Court.",
+        "importantPoints": [
+          {
+            "id": "pt_1",
+            "category": "Key Discussions",
+            "title": "Criticism of Election Commission Procedures",
+            "explanation": "Raj argues that the current voter registration process, specifically the requirement to use Form 6 for address changes, is designed to complicate and discourage voters, potentially leading to disenfranchisement.",
+            "importance": "High",
+            "speaker": "Prakash Raj",
+            "timestamp": "04:30",
+            "excerpt": "Form 6 is for new voters. I have lived in this constituency, worked here, and contested elections here. Why force me to use Form 6 when I am only changing my address?"
+          },
+          {
+            "id": "pt_2",
+            "category": "Future Plans",
+            "title": "Demand for Judicial Intervention",
+            "explanation": "Raj is calling for the Supreme Court to seize all files and decisions made by the Election Commission since 2023 to ensure transparency and accountability.",
+            "importance": "High",
+            "speaker": "Prakash Raj",
+            "timestamp": "02:36",
+            "excerpt": "The Supreme Court must immediately take all files from the Election Commission to understand the decisions made since 2023."
+          },
+          {
+            "id": "pt_3",
+            "category": "Problems Identified",
+            "title": "Lack of Accountability in Electoral Processes",
+            "explanation": "The speaker highlights the lack of transparency regarding EVM safety and the 'judicial immunity' granted to election officials, which he claims undermines democratic accountability.",
+            "importance": "High",
+            "speaker": "Prakash Raj",
+            "timestamp": "02:24",
+            "excerpt": "You have given judicial immunity; remove that rule. That is not democracy."
+          }
+        ],
+        "decisions": [
+          {
+            "id": "dec_1",
+            "decision": "Call for the removal of Election Commissioner Gyanesh Kumar",
+            "context": "The speaker believes the current leadership of the Election Commission is responsible for procedural failures and lack of transparency.",
+            "isConfirmed": true,
+            "decidedBy": "Prakash Raj",
+            "timestamp": "02:06"
+          }
+        ],
+        "actionItems": [
+          {
+            "id": "act_1",
+            "task": "Supreme Court to investigate Election Commission decisions since 2023",
+            "assignedTo": "Supreme Court of India",
+            "deadline": "Not specified",
+            "status": "Pending",
+            "timestamp": "02:36"
+          }
+        ],
+        "keyFacts": [
+          {
+            "id": "kf_1",
+            "category": "Name",
+            "item": "Gyanesh Kumar",
+            "context": "Election Commissioner whose removal is demanded by the speaker."
+          },
+          {
+            "id": "kf_2",
+            "category": "Claim",
+            "item": "EVM destruction",
+            "context": "Speaker alleges that 4,000 EVMs were destroyed by fire following the Bengal elections without proper inquiry."
+          }
+        ],
+        "pendingQuestions": [
+          "Will the Supreme Court take cognizance of the demands for a judicial audit of the Election Commission?",
+          "How will the Election Commission respond to the allegations regarding the complexity of voter registration forms?"
+        ],
+        "transcriptSegments": [
+          {
+            "id": "tr_1",
+            "speaker": "Prakash Raj",
+            "timestamp": "00:00",
+            "text": "When you look at countries like Bangladesh or Pakistan, the military stands tall. The military takes power. In India, it's not possible because of Babasaheb's Constitution."
+          },
+          {
+            "id": "tr_2",
+            "speaker": "Prakash Raj",
+            "timestamp": "02:06",
+            "text": "First, Gyanesh Kumar must be removed. And not just removed, an investigation must be conducted."
+          }
+        ],
+        "detectedLanguage": "ta"
+      }
+    },
+    {
+      "id": "ans_297fbf5f-ed70-46c6-b8a7-dc006b2536c6",
+      "userId": "usr_29151dcd-f2ca-4039-a5fe-dd93b775d241",
+      "title": "Press meet  protest  தமழநட ஏன silent ஆ இரகக  sir  sun news   prakash raj",
+      "sourceType": "video",
+      "fileName": "press-meet--protest--தமழநட-ஏன-silent-ஆ-இரகக--sir--sun-news---prakash-raj.mp4",
+      "fileSize": 15461774,
+      "mediaPath": "/app/applet/data/uploads/upl_20b0b978-a115-40fb-9d65-3b8adbf72816_press-meet--protest--_____-__-silent-_-____--sir--sun-news---prakash-raj.mp4",
+      "sourceLanguage": "auto",
+      "outputLanguage": "en",
+      "uploadStatus": "completed",
+      "processingStatus": "failed",
+      "headline": "Processing Newsroom Analysis...",
+      "isSaved": false,
+      "createdAt": "2026-10-09T09:18:45.317Z",
+      "updatedAt": "2026-10-09T09:22:44.281Z",
+      "jobId": "job_09a104fa-d832-49c1-883b-5e267c72868d"
+    },
+    {
+      "id": "ans_a52cd37a-cd3e-4fc8-8155-f9ae8fdce1fe",
+      "userId": "usr_29151dcd-f2ca-4039-a5fe-dd93b775d241",
+      "title": "Press meet  protest  தமழநட ஏன silent ஆ இரகக  sir  sun news   prakash raj",
+      "sourceType": "video",
+      "fileName": "press-meet--protest--தமழநட-ஏன-silent-ஆ-இரகக--sir--sun-news---prakash-raj.mp4",
+      "fileSize": 15461774,
+      "mediaPath": "/app/applet/data/uploads/upl_20b0b978-a115-40fb-9d65-3b8adbf72816_press-meet--protest--_____-__-silent-_-____--sir--sun-news---prakash-raj.mp4",
+      "sourceLanguage": "auto",
+      "outputLanguage": "en",
+      "uploadStatus": "completed",
+      "processingStatus": "failed",
+      "headline": "Processing Newsroom Analysis...",
+      "isSaved": false,
+      "createdAt": "2026-10-09T09:23:03.347Z",
+      "updatedAt": "2026-10-09T09:25:19.240Z",
+      "jobId": "job_0831745a-4432-4916-9436-5a4ab4d23b83"
+    }
+  ],
+  "mediaFiles": [
+    {
+      "id": "med_1232d599-4e9f-4ff1-8d4a-24fe6dae9aea",
+      "userId": "usr_29151dcd-f2ca-4039-a5fe-dd93b775d241",
+      "storageKey": "upl_20b0b978-a115-40fb-9d65-3b8adbf72816",
+      "originalFileName": "press-meet--protest--தமழநட-ஏன-silent-ஆ-இரகக--sir--sun-news---prakash-raj.mp4",
+      "mimeType": "video/mp4",
+      "fileSize": 15461774,
+      "filePath": "/app/applet/data/uploads/upl_20b0b978-a115-40fb-9d65-3b8adbf72816_press-meet--protest--_____-__-silent-_-____--sir--sun-news---prakash-raj.mp4",
+      "uploadStatus": "completed",
+      "createdAt": "2026-10-09T09:01:18.302Z",
+      "analysisId": "ans_a52cd37a-cd3e-4fc8-8155-f9ae8fdce1fe"
+    }
+  ],
+  "processingJobs": [
+    {
+      "id": "job_bebd91bc-333d-46a1-a308-d785b651eb56",
+      "analysisId": "ans_afc30701-5381-44c4-917c-3d7ac629c231",
+      "userId": "usr_29151dcd-f2ca-4039-a5fe-dd93b775d241",
+      "jobType": "video_analysis",
+      "status": "completed",
+      "progress": 100,
+      "currentStage": "Analysis complete. Editorial report ready.",
+      "retryCount": 1,
+      "startedAt": "2026-10-09T09:32:53.763Z",
+      "completedAt": "2026-10-09T09:34:23.495Z"
+    },
+    {
+      "id": "job_09a104fa-d832-49c1-883b-5e267c72868d",
+      "analysisId": "ans_297fbf5f-ed70-46c6-b8a7-dc006b2536c6",
+      "userId": "usr_29151dcd-f2ca-4039-a5fe-dd93b775d241",
+      "jobType": "video_analysis",
+      "status": "failed",
+      "progress": 70,
+      "currentStage": "Failed: AI Analysis failed: {\"error\":{\"code\":503,\"message\":\"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\"status\":\"UNAVAILABLE\"}}",
+      "retryCount": 0,
+      "startedAt": "2026-10-09T09:18:45.319Z",
+      "errorCode": "PROCESSING_ERROR",
+      "errorMessage": "AI Analysis failed: {\"error\":{\"code\":503,\"message\":\"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\"status\":\"UNAVAILABLE\"}}"
+    },
+    {
+      "id": "job_0831745a-4432-4916-9436-5a4ab4d23b83",
+      "analysisId": "ans_a52cd37a-cd3e-4fc8-8155-f9ae8fdce1fe",
+      "userId": "usr_29151dcd-f2ca-4039-a5fe-dd93b775d241",
+      "jobType": "video_analysis",
+      "status": "failed",
+      "progress": 70,
+      "currentStage": "Failed: AI Analysis failed: fetch failed",
+      "retryCount": 0,
+      "startedAt": "2026-10-09T09:23:03.348Z",
+      "errorCode": "PROCESSING_ERROR",
+      "errorMessage": "AI Analysis failed: fetch failed"
+    }
+  ],
+  "uploadSessions": [
+    {
+      "uploadId": "upl_3c1cf8bb-33f3-441d-8a54-c2e5afd2af9a",
+      "userId": "usr_test_1",
+      "originalFileName": "boardroom_discussion.mp4",
+      "fileSize": 157286400,
+      "mimeType": "video/mp4",
+      "chunkSize": 5242880,
+      "totalChunks": 30,
+      "uploadedChunks": [],
+      "completed": false,
+      "targetPath": "/app/applet/data/uploads/upl_3c1cf8bb-33f3-441d-8a54-c2e5afd2af9a_boardroom_discussion.mp4",
+      "createdAt": "2026-10-09T08:46:23.930Z",
+      "updatedAt": "2026-10-09T08:46:23.930Z"
+    },
+    {
+      "uploadId": "upl_20b0b978-a115-40fb-9d65-3b8adbf72816",
+      "userId": "usr_29151dcd-f2ca-4039-a5fe-dd93b775d241",
+      "originalFileName": "press-meet--protest--தமழநட-ஏன-silent-ஆ-இரகக--sir--sun-news---prakash-raj.mp4",
+      "fileSize": 15461774,
+      "mimeType": "video/mp4",
+      "chunkSize": 5242880,
+      "totalChunks": 3,
+      "uploadedChunks": [
+        0,
+        1,
+        2
+      ],
+      "completed": true,
+      "targetPath": "/app/applet/data/uploads/upl_20b0b978-a115-40fb-9d65-3b8adbf72816_press-meet--protest--_____-__-silent-_-____--sir--sun-news---prakash-raj.mp4",
+      "createdAt": "2026-10-09T09:01:02.044Z",
+      "updatedAt": "2026-10-09T09:01:18.302Z"
+    }
+  ]
+}

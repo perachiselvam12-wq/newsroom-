@@ -1,0 +1,6 @@
+{
+  "name": "Newsroom AI",
+  "description": "AI-Powered Video Meeting Analyzer, News Headline Generator & Summary Creator",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
