@@ -3,31 +3,19 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import rawConfig from '../../firebase-applet-config.json';
 
-const resolvedProjectId =
-  import.meta.env.VITE_FIREBASE_PROJECT_ID ||
-  rawConfig.projectId ||
-  'newsroom-ai-2b07a';
-
-// Ensure authDomain always matches the active projectId unless explicitly customized
-const rawAuthDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || rawConfig.authDomain;
-const resolvedAuthDomain =
-  rawAuthDomain && !rawAuthDomain.includes('gen-lang-client')
-    ? rawAuthDomain
-    : `${resolvedProjectId}.firebaseapp.com`;
-
-const resolvedStorageBucket =
-  import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ||
-  (rawConfig.storageBucket && !rawConfig.storageBucket.includes('gen-lang-client')
-    ? rawConfig.storageBucket
-    : `${resolvedProjectId}.firebasestorage.app`);
-
 export const firebaseConfig = {
-  projectId: resolvedProjectId,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || rawConfig.projectId,
   appId: import.meta.env.VITE_FIREBASE_APP_ID || rawConfig.appId,
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || rawConfig.apiKey,
-  authDomain: resolvedAuthDomain,
+  authDomain:
+    import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ||
+    rawConfig.authDomain ||
+    (rawConfig.projectId ? `${rawConfig.projectId}.firebaseapp.com` : undefined),
   firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || rawConfig.firestoreDatabaseId || '(default)',
-  storageBucket: resolvedStorageBucket,
+  storageBucket:
+    import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ||
+    rawConfig.storageBucket ||
+    (rawConfig.projectId ? `${rawConfig.projectId}.firebasestorage.app` : undefined),
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || rawConfig.messagingSenderId,
 };
 
