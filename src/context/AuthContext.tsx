@@ -10,7 +10,7 @@ import {
   updateProfile as updateFirebaseProfile,
   type User as FirebaseUser,
 } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { auth, firebaseConfig } from '../lib/firebase';
 import {
   saveUserProfile,
   getUserProfile,
@@ -35,6 +35,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function formatAuthError(error: any): string {
   const code = error?.code || '';
+  const message = error?.message || '';
+
+  if (code === 'auth/unauthorized-domain' || message.includes('auth/unauthorized-domain')) {
+    const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'current domain';
+    return `Firebase Error (auth/unauthorized-domain): Domain "${currentHost}" is not authorized for Firebase project "${firebaseConfig.projectId}". Verify that "${currentHost}" is in Firebase Console → Authentication → Settings → Authorized domains for "${firebaseConfig.projectId}", and that authDomain is set to "${firebaseConfig.authDomain}".`;
+  }
+
   switch (code) {
     case 'auth/invalid-credential':
     case 'auth/user-not-found':
@@ -52,6 +59,12 @@ export function formatAuthError(error: any): string {
       return 'Google sign-in popup was closed before completion.';
     case 'auth/too-many-requests':
       return 'Access temporarily blocked due to many failed attempts. Try again later.';
+    case 'auth/configuration-not-found':
+      return `Firebase Authentication is not configured for project "${firebaseConfig.projectId}". Please enable Authentication in the Firebase Console.`;
+    case 'auth/operation-not-allowed':
+      return `This sign-in provider is disabled in Firebase Console. Please enable Email/Password or Google provider under Authentication → Sign-in method.`;
+    case 'auth/network-request-failed':
+      return 'Network request failed. Please check your internet connection or Firebase service status.';
     default:
       return error?.message || 'Authentication failed. Please try again.';
   }

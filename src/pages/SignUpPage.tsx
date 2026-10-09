@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, Lock, Mail, User as UserIcon, AlertCircle, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, User as UserIcon, AlertCircle, ArrowRight, ShieldAlert } from 'lucide-react';
+import { firebaseConfig } from '../lib/firebase';
 
 interface SignUpPageProps {
   onSuccess: () => void;
@@ -84,9 +85,36 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onSuccess, onNavigateToL
         </div>
 
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
+          <div className="space-y-2">
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <span className="font-medium leading-relaxed block">{error}</span>
+              </div>
+            </div>
+
+            {error.includes('auth/unauthorized-domain') && (
+              <div className="p-3 bg-amber-50 border border-amber-200 text-slate-800 text-xs rounded space-y-2">
+                <div className="flex items-center gap-1.5 font-semibold text-amber-900">
+                  <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span>Domain Authorization Guide</span>
+                </div>
+                <div className="bg-white p-2.5 rounded border border-amber-200 font-mono text-[11px] space-y-1 text-slate-700">
+                  <div><strong className="text-slate-900">Current Domain:</strong> {typeof window !== 'undefined' ? window.location.hostname : 'newsroom-jade.vercel.app'}</div>
+                  <div><strong className="text-slate-900">Firebase Project:</strong> {firebaseConfig.projectId}</div>
+                  <div><strong className="text-slate-900">Configured authDomain:</strong> {firebaseConfig.authDomain}</div>
+                </div>
+                <div className="text-[11px] text-slate-600 space-y-1">
+                  <p className="font-semibold text-slate-800">Resolution Checklist:</p>
+                  <ol className="list-decimal list-inside space-y-0.5">
+                    <li>Open <strong>Firebase Console</strong> and choose project <code className="text-red-700 bg-red-50 px-1 py-0.5 rounded font-mono">{firebaseConfig.projectId}</code>.</li>
+                    <li>Go to <strong>Build &gt; Authentication &gt; Settings &gt; Authorized domains</strong>.</li>
+                    <li>Confirm that <code className="text-red-700 bg-red-50 px-1 py-0.5 rounded font-mono">{typeof window !== 'undefined' ? window.location.hostname : 'newsroom-jade.vercel.app'}</code> is listed.</li>
+                    <li>In your <strong>Vercel Project Settings &gt; Environment Variables</strong>, set <code className="text-red-700 bg-red-50 px-1 py-0.5 rounded font-mono">VITE_FIREBASE_PROJECT_ID={firebaseConfig.projectId}</code> and redeploy.</li>
+                  </ol>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
